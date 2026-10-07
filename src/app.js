@@ -37,6 +37,10 @@ app.post("/tasks", (req, res) => {
     res.status(201).json(task);
 });
 
-app.listen(PORT, () => {
-    console.log(`TaskFlow API running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`TaskFlow API running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
