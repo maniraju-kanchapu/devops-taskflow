@@ -27,34 +27,36 @@ pipeline {
         }
 
         stage('Push to Docker Hub') {
-    steps {
-        withCredentials([
-            usernamePassword(
-                credentialsId: 'dockerhub-taskflow',
-                usernameVariable: 'DOCKER_USERNAME',
-                passwordVariable: 'DOCKER_PASSWORD'
-            )
-        ]) {
-            powershell '''
-                Write-Host "Docker username: $env:DOCKER_USERNAME"
-                Write-Host "Password length: $($env:DOCKER_PASSWORD.Length)"
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-taskflow',
+                        usernameVariable: 'DOCKER_USERNAME',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    powershell '''
+                        Write-Host "Docker username: $env:DOCKER_USERNAME"
+                        Write-Host "Password length: $($env:DOCKER_PASSWORD.Length)"
 
-                $env:DOCKER_PASSWORD | docker login -u $env:DOCKER_USERNAME --password-stdin
+                        $env:DOCKER_PASSWORD | docker login -u $env:DOCKER_USERNAME --password-stdin
 
-                Write-Host "Docker login exit code: $LASTEXITCODE"
+                        Write-Host "Docker login exit code: $LASTEXITCODE"
 
-                if ($LASTEXITCODE -ne 0) {
-                    exit $LASTEXITCODE
+                        if ($LASTEXITCODE -ne 0) {
+                            exit $LASTEXITCODE
+                        }
+
+                        docker push "$env:IMAGE_NAME`:$env:IMAGE_TAG"
+
+                        if ($LASTEXITCODE -ne 0) {
+                            exit $LASTEXITCODE
+                        }
+
+                        docker logout
+                    '''
                 }
-
-                docker push "$env:IMAGE_NAME`:$env:IMAGE_TAG"
-
-                if ($LASTEXITCODE -ne 0) {
-                    exit $LASTEXITCODE
-                }
-
-                docker logout
-            '''
+            }
         }
     }
 }
