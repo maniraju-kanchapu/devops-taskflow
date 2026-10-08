@@ -27,31 +27,34 @@ pipeline {
         }
 
         stage('Push to Docker Hub') {
-            steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-taskflow',
-                        usernameVariable: 'DOCKER_USERNAME',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    )
-                ]) {
-                    powershell '''
-                        $env:DOCKER_PASSWORD | docker login -u $env:DOCKER_USERNAME --password-stdin
+    steps {
+        withCredentials([
+            usernamePassword(
+                credentialsId: 'dockerhub-taskflow',
+                usernameVariable: 'DOCKER_USERNAME',
+                passwordVariable: 'DOCKER_PASSWORD'
+            )
+        ]) {
+            powershell '''
+                Write-Host "Docker username: $env:DOCKER_USERNAME"
+                Write-Host "Password length: $($env:DOCKER_PASSWORD.Length)"
 
-                        if ($LASTEXITCODE -ne 0) {
-                            exit $LASTEXITCODE
-                        }
+                $env:DOCKER_PASSWORD | docker login -u $env:DOCKER_USERNAME --password-stdin
 
-                        docker push "$env:IMAGE_NAME`:$env:IMAGE_TAG"
+                Write-Host "Docker login exit code: $LASTEXITCODE"
 
-                        if ($LASTEXITCODE -ne 0) {
-                            exit $LASTEXITCODE
-                        }
-
-                        docker logout
-                    '''
+                if ($LASTEXITCODE -ne 0) {
+                    exit $LASTEXITCODE
                 }
-            }
+
+                docker push "$env:IMAGE_NAME`:$env:IMAGE_TAG"
+
+                if ($LASTEXITCODE -ne 0) {
+                    exit $LASTEXITCODE
+                }
+
+                docker logout
+            '''
         }
     }
 }
