@@ -4,6 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "pikachu126/devops-taskflow"
         IMAGE_TAG = "1.0"
+        DOCKER_HOST = "npipe:////./pipe/dockerDesktopLinuxEngine"
     }
 
     stages {
@@ -35,29 +36,15 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
-                    powershell '''
-                        Write-Host "Docker username: $env:DOCKER_USERNAME"
-Write-Host "Password length: $($env:DOCKER_PASSWORD.Length)"
+                    bat '''
+                        docker logout
+                        echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
 
-$bytes = [Text.Encoding]::UTF8.GetBytes($env:DOCKER_PASSWORD)
-$hash = [Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
-$fingerprint = [BitConverter]::ToString($hash).Replace("-", "").ToLower()
+                        if errorlevel 1 exit /b 1
 
-Write-Host "Jenkins PAT SHA256: $fingerprint"
+                        docker push %IMAGE_NAME%:%IMAGE_TAG%
 
-$env:DOCKER_PASSWORD | docker login -u $env:DOCKER_USERNAME --password-stdin
-
-                        Write-Host "Docker login exit code: $LASTEXITCODE"
-
-                        if ($LASTEXITCODE -ne 0) {
-                            exit $LASTEXITCODE
-                        }
-
-                        docker push "$env:IMAGE_NAME`:$env:IMAGE_TAG"
-
-                        if ($LASTEXITCODE -ne 0) {
-                            exit $LASTEXITCODE
-                        }
+                        if errorlevel 1 exit /b 1
 
                         docker logout
                     '''
