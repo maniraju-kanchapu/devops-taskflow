@@ -37,9 +37,15 @@ pipeline {
                 ]) {
                     powershell '''
                         Write-Host "Docker username: $env:DOCKER_USERNAME"
-                        Write-Host "Password length: $($env:DOCKER_PASSWORD.Length)"
+Write-Host "Password length: $($env:DOCKER_PASSWORD.Length)"
 
-                        $env:DOCKER_PASSWORD | docker login -u $env:DOCKER_USERNAME --password-stdin
+$bytes = [Text.Encoding]::UTF8.GetBytes($env:DOCKER_PASSWORD)
+$hash = [Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
+$fingerprint = [BitConverter]::ToString($hash).Replace("-", "").ToLower()
+
+Write-Host "Jenkins PAT SHA256: $fingerprint"
+
+$env:DOCKER_PASSWORD | docker login -u $env:DOCKER_USERNAME --password-stdin
 
                         Write-Host "Docker login exit code: $LASTEXITCODE"
 
