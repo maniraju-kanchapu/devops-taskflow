@@ -35,9 +35,21 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
-                    bat 'echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin'
-                    bat 'docker push %IMAGE_NAME%:%IMAGE_TAG%'
-                    bat 'docker logout'
+                    powershell '''
+                        $env:DOCKER_PASSWORD | docker login -u $env:DOCKER_USERNAME --password-stdin
+
+                        if ($LASTEXITCODE -ne 0) {
+                            exit $LASTEXITCODE
+                        }
+
+                        docker push "$env:IMAGE_NAME`:$env:IMAGE_TAG"
+
+                        if ($LASTEXITCODE -ne 0) {
+                            exit $LASTEXITCODE
+                        }
+
+                        docker logout
+                    '''
                 }
             }
         }
